@@ -1,0 +1,112 @@
+
+<!-- saved from url=(0039)http://sheetjs.com/demos/writexlsx.html -->
+<html>
+<head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+
+<script type="text/javascript" src="./src/test.js"></script>
+<script type="text/javascript" src="./src/Blob.js"></script>
+<script type="text/javascript" src="./src/FileSaver.js"></script>
+<script>
+function datenum(v, date1904) {
+	if(date1904) v+=1462;
+	var epoch = Date.parse(v);
+	return (epoch - new Date(Date.UTC(1899, 11, 30))) / (24 * 60 * 60 * 1000);
+}
+ 
+function json_to_sheet(js/*:Array<any>*/, opts)/*:Worksheet*/ {
+	var o = opts || {};
+	var ws = ({}/*:any*/);
+	var range/*:Range*/ = ({s: {c:0, r:0}, e: {c:0, r:js.length}}/*:any*/);
+	var hdr = o.header || [], C = 0;
+
+	for(var R = 0; R != js.length; ++R) {
+		Object.keys(js[R]).filter(function(x) { return js[R].hasOwnProperty(x); }).forEach(function(k) {
+
+			if((C=hdr.indexOf(k)) == -1) hdr[C=hdr.length] = k;
+			var v = js[R][k];
+			var t = 'z';
+		    var s;
+			if(R == 0){
+				if(C<2)
+				{
+				s={
+					fill:{
+						fgColor:{ rgb: "FFFFAA00" }
+					}
+					,alignment:{ wrapText: true },
+					border:
+					{
+					bottom:{ style: "thick", color: "red" }
+					}
+				}
+				}else{
+				s={
+					fill:{
+						fgColor:{ rgb: "black" }
+					}
+					,alignment:{ wrapText: true },
+					border:
+					{
+					bottom:{ style: "thick", color: "red" }
+					}
+				}
+			}
+			}
+			
+			if(typeof v == 'number') t = 'n';
+			else if(typeof v == 'boolean') t = 'b';
+			ws[XLSX.utils.encode_cell({c:C,r:R+1})] = {t:t, v:v,s:s};
+		});
+	}
+	range.e.c = hdr.length-1 ;
+	for(C = 0; C < hdr.length; ++C) ws[XLSX.utils.encode_col(C) + "1"] = {t:'s', v:hdr[C]};
+	
+	
+	ws['!ref'] = XLSX.utils.encode_range(range);
+	console.log("--------------")
+	console.log(ws)
+	return ws;
+}
+ 
+
+function Workbook() {
+	if(!(this instanceof Workbook)) return new Workbook();
+	this.SheetNames = [];
+	this.Sheets = {};
+}
+ 
+
+function s2ab(s) {
+	var buf = new ArrayBuffer(s.length);
+	var view = new Uint8Array(buf);
+	for (var i=0; i!=s.length; ++i) view[i] = s.charCodeAt(i) & 0xFF;
+	return buf;
+}
+
+function save(){
+	/* original data */
+	var data = [
+                    {kkasfkdaskfkadskfadkfkdskfkdskfkdskfkdkfksdkflll: "kkasfkdaskfkadskfadkfkdskfkdskfkdskfkdkfksdkf"},
+                    
+                ]
+	var ws_name = "SheetJS";
+	 var orgheader = {header:["kkasfkdaskfkadskfadkfkdskfkdskfkdskfkdkfksdkflll"]};
+	var wb = new Workbook(), ws = json_to_sheet(data,orgheader);
+	 
+	/* add worksheet to workbook */
+	wb.SheetNames.push(ws_name);
+	console.log(ws);
+	console.log(JSON.stringify(ws));
+	wb.Sheets[ws_name] = ws;
+	var wbout = XLSX.write(wb, {bookType:'xlsx', bookSST:true, type: 'binary'});
+    console.log(JSON.stringify(wbout))
+	saveAs(new Blob([s2ab(wbout)],{type:"application/octet-stream"}), "sample.xlsx")
+}
+
+</script>
+
+
+</head><body>
+	<div>Click the button below to save a sample excel file with minimal styles.</div>
+	<button onclick="save()">save</button>
+</body></html>
